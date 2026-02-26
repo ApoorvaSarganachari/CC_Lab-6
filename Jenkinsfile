@@ -17,11 +17,15 @@ pipeline {
                 sh '''
                 docker network create app-network || true
 
-                # clean old containers safely
+                # remove old containers safely
                 docker rm -f backend1 backend2 2>/dev/null || true
 
+                # start backend containers
                 docker run -d --name backend1 --network app-network backend-app
                 docker run -d --name backend2 --network app-network backend-app
+
+                echo "=== Running containers ==="
+                docker ps
                 '''
             }
         }
@@ -37,13 +41,16 @@ pipeline {
                   -p 80:80 \
                   nginx
 
-                # ⭐ IMPORTANT: wait for nginx to start
-                sleep 5
+                # wait for nginx to fully start
+                sleep 6
 
                 docker cp nginx/default.conf nginx-lb:/etc/nginx/conf.d/default.conf
 
-                # ⭐ do not fail pipeline if reload warns
+                # reload safely
                 docker exec nginx-lb nginx -s reload || true
+
+                echo "=== Final container status ==="
+                docker ps
                 '''
             }
         }
